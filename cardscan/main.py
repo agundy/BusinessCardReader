@@ -3,55 +3,28 @@ import cv2
 from matplotlib import pyplot as plt
 import glob
 import random as rand
+import utils
 
-def readImage(imgName, grayscale=False):
-    '''Simple function to read in an image and reverse the colors'''
-    if grayscale:
-        img = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
-    else:
-        img = cv2.imread(imgName)
-        img = img[::,::,::-1]
-    return img
-
-def getImages(path, limit=20):
-    '''
-    INPUT: path: String of the folder 
-        i.e. '../example_imgs'
-    OUTPUT imgs: list of tuples with name and path 
-        i.e. [('img1', '../example_imgs/img1')]
-    '''
-    path = './' + path + '/*'
-    imageNames = glob.glob(path)
-    imageNames = sorted(imageNames)
-    imgs = []
-    for i, imageName in enumerate(imageNames):
-        if i >= limit and limit != -1:
-            break
-        imgPath = imageName.split('/')
-        photoName = imgPath[len(imgPath)-1]
-        img = readImage(imageName)
-        print "Opening image %s" %imageName
-        imgs.append((photoName, img))
-    return imgs
-
-def display(images):
-    '''
-    Takes a list of [(name, image, grayscaleImage, (keypoints, descriptor))]
-    and displays them in a grid two wide
-    '''
-    # Calculate the height of the the plt. This is the hundreds digit
-    size = int(np.ceil(len(images)/2.))*100
-    # Number of images across is the tens digit
-    size += 20
-    count = 1
-    for imgName, img in images:
-        plt.subplot(size + count)
-        plt.imshow(img)
-        plt.title(imgName)
-        count += 1
-    plt.show()
-
+def findText(img):
+    grayImg = cv2.cvtColor(img[1], cv2.COLOR_BGR2GRAY)
+    avg = np.average(grayImg)
+    grayImg[::,::] -= avg
+    ret, threshImg = cv2.threshold(grayImg, 70, 255, cv2.THRESH_BINARY)
+    print threshImg
+    image, contours, hierarchy = cv2.findContours(threshImg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    img = cv2.drawContours(img[1], contours, -1, (0,255,0), 3)
+    # sobelImg = cv2.Sobel(grayImg, cv2.CV_64F,1,0,ksize=5)
+    utils.display([(img[0], img), (img[0] + ' Gray', grayImg), (img[0] + ' Sobel', threshImg)])
 
 if __name__ == "__main__":
-    imgs = getImages('../../stanford_business_cards/scans')
-    display(imgs[:5])
+    im = cv2.imread('../../stanford_business_cards/scans/001.jpg')
+    imgray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+    ret,thresh = cv2.threshold(imgray,127,255,0)
+    contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(im, contours, -1, (0,255,0), 3)
+    utils.display([('', im)])
+    '''
+    imgs = utils.getImages('../../stanford_business_cards/scans', 30)
+    findText(imgs[4])
+    utils.display(imgs[:5])
+    '''
