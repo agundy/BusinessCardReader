@@ -10,7 +10,7 @@ def readImage(imgName, grayscale=False):
         img = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
     else:
         img = cv2.imread(imgName)
-        img = img[::,::,::-1]
+        img = np.array(img[::,::,::-1])
     return img
 
 def getImages(path, limit=20):
