@@ -1,11 +1,21 @@
-#Tested images that work Droid 12, 14,17,19,21,22, 23,24, 25, maybe 26,30
-#TODO Error checking to make sure right angles are formed by corners
-#TODO Add more methods to process cards if first on fails
-#TODO Hard code less values and find ways to compute values
+#Tested images that work Droid 7,12, 14,17,19,21,22, 23,24, 25, maybe 26,30
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import math as m
+
+#Angle check, if angle is greater than 9% off from what it should be (pi/2)
+def checkAngle(angle):
+    return m.pi/2 - m.pi/2*.15 < angle and angle < m.pi/2 + m.pi/2*.15
+
+def find_angle(pt1,pt2,pt3):
+    #pt1 is the vertex of the three points forming the angle
+    p12 = m.sqrt( (pt1[0] - pt2[0])**2 + (pt1[1] - pt2[1])**2 )
+    p13 = m.sqrt( (pt1[0] - pt3[0])**2 + (pt1[1] - pt3[1])**2 )
+    p23 = m.sqrt( (pt2[0] - pt3[0])**2 + (pt2[1] - pt3[1])**2 )
+    #From law of Cosines
+    angle = m.acos( (p12**2+p13**2-p23**2) / (2.0*p12*p13) )
+    return angle
 
 def processCard(image_o,scale):
     #Scale image down so functions work better and turns to greyscale
@@ -56,7 +66,16 @@ def findAndTransform(processed, original, scale):
     uRight = np.array(uRight) * scale
     lLeft = np.array(lLeft) * scale
     lRight = np.array(lRight) * scale
-
+    points = [uLeft,uRight,lRight,lLeft]
+    total_angle = m.pi * 2
+    angle_check = True
+    for i in range(len(points) - 1):
+        angle = find_angle(points[i], points[i-1], points[i+1])
+        if not checkAngle(angle):
+            angle_check = False
+        total_angle -= angle
+    if not checkAngle(total_angle):
+        angle_check = False
     length = int(m.sqrt((uLeft[0]-uRight[0])**2 + (uLeft[1]-uRight[1])**2))
     width = int(m.sqrt((uLeft[0] - lLeft[0])**2 + (uLeft[1] - lLeft[1])**2 ))
     #Maps corners to new image size
@@ -66,23 +85,27 @@ def findAndTransform(processed, original, scale):
     #Transforms and returns scan like image
     M = cv2.getPerspectiveTransform(pts1,pts2)
     dst = cv2.warpPerspective(original, M,(length,width))
-    return dst
+    return angle_check, dst
 
 def main():
 
     path = "/media/andrew/E0D419A0D41979CC/Users/Andrew Batbouta/Dropbox/Droid/"
-    image_o = cv2.imread(path+'026.jpg')
-    #Scale factor that seems to be working the best so far
-    scale = 10
-    edits = processCard(image_o, scale)
-    dst = findAndTransform(edits, image_o, scale)
-    plt.subplot(121)
-    plt.imshow(dst)
-    plt.axis("off")
-    plt.subplot(122)
-    plt.axis("off")
-    plt.imshow(image_o)
-    plt.show()
+    for i in range(10,35):
+        image_o = cv2.imread(path+'0'+str(i)+'.jpg')
+        #Scale factor that seems to be working the best so far
+        scale = 10
+
+        edits = processCard(image_o, scale)
+        good, dst = findAndTransform(edits, image_o, scale)
+        if good:
+            print i
+            plt.subplot(121)
+            plt.imshow(dst)
+            plt.axis("off")
+            plt.subplot(122)
+            plt.axis("off")
+            plt.imshow(image_o)
+            plt.show()
 
 
 if __name__ == '__main__':
