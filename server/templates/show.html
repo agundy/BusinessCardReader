@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Upload{% endblock %}
+{% block content %}
+<div class='row text-center'>
+    <h2>BusinessCardScanner</h2>
+    <p>
+        View Card: {{card.filename}}
+    </p>
+</div>
+<div class='row'>
+    <div class='six columns'>
+        <h2></h2>
+        <img src="{{ url }}" alt="Uploaded File" class='u-max-full-width'>
+    </div>
+    <div class='six columns'>
+    </div>
+</div>
+{% endblock %}
