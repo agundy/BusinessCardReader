@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}BusinessCardScanner{% endblock %}
+{% block content %}
+<div class='row text-center'>
+    <h2>BusinessCardScanner</h2>
+    <p>
+    Below are some recently uploaded business cards. 
+    </p>
+</div>
+<div class='row'>
+    <div class='four columns'>
+        <br>
+    </div>
+    <div class='four columns'>
+        <ul>
+            {% for card in cards %}
+            <li><a href='/show/{{ card._id}}'>{{card.filename }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

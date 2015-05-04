@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Upload{% endblock %}
+{% block content %}
+<div class='row'>
+    <div class='twelve columns text-center'>
+        <h2>BusinessCardScanner</h2>
+    </div>
+</div>
+<form method=POST enctype=multipart/form-data action="{{ url_for('upload') }}">
+    <div class="row text-center">
+        <div class='twelve columns'>
+            <input type=file name=photo>
+        </div>
+    </div>
+    <div class="row text-center">
+        <div class='twelve columns'>
+            <input type=submit value="Scan Card">
+        </div>
+    </div>
+    </form>
+{% endblock %}

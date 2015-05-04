@@ -39,8 +39,8 @@ def getRegions(img):
     edges = cv2.Canny(grayImg,150,200,apertureSize = 3) 
     kernel = np.ones((3,3),np.uint8)
     edges = cv2.dilate(edges,kernel,iterations = 12)
-    binaryImg = cv2.morphologyEx(edges,cv2.MORPH_CLOSE,kernel)
-    contours, hierarchy = cv2.findContours(binaryImg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    # binaryImg = cv2.morphologyEx(edges,cv2.MORPH_CLOSE,kernel)
+    contours, hierarchy = cv2.findContours(edges,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     # Only take contours of a certain size
     regions = []
     for contour in contours:
