@@ -26,9 +26,7 @@ def upload():
     if request.method == 'POST' and 'photo' in request.files:
         filename = uploaded_photos.save(request.files['photo'])
         photo = {'filename': filename}
-        print "Past"
         card_id = BusinessCards.insert(photo)
-        print "Past"
         return redirect(url_for('show', card_id=card_id))
     return render_template('upload.html')
 
@@ -38,7 +36,6 @@ def show(card_id):
     if card == None:
         abort(404)
     url = uploaded_photos.url(card['filename'])
-    print url
     return render_template('show.html', card=card, url=url)
 
 if __name__ == '__main__':
