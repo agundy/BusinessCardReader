@@ -3,10 +3,12 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import math as m
+import process
 
-#Angle check, if angle is greater than 9% off from what it should be (pi/2)
+
+#Angle check, if angle is greater than 33% off from what it should be (pi/2)
 def checkAngle(angle):
-    return m.pi/2 - m.pi/2*.15 < angle and angle < m.pi/2 + m.pi/2*.15
+    return m.pi/2 - m.pi/2*.33 < angle and angle < m.pi/2 + m.pi/2*.33
 
 def find_angle(pt1,pt2,pt3):
     #pt1 is the vertex of the three points forming the angle
@@ -22,30 +24,27 @@ def processCard(image_o,scale):
     image = cv2.resize(image_o, (image_o.shape[1]/scale, image_o.shape[0]/scale))
     imgray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 
-    #Porcessing image to improve reliability of finding corners
+    #Processing image to improve reliability of finding corners
+
     sigma = 2
     ksize = (4*sigma+1,4*sigma+1)
     imgray = cv2.GaussianBlur(imgray, ksize, sigma)
-    test = imgray.flatten()
-    summ = np.sum(test)
-    attempt = int( summ / test.shape[0])
-    ret,thresh = cv2.threshold(imgray,attempt,255,cv2.THRESH_BINARY_INV)
 
     kernel = np.ones((5,5),np.uint8)
 
-    thresh = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel)
-    thresh = cv2.morphologyEx(thresh,cv2.MORPH_CLOSE,kernel)
-    #Returns Canny edge version of srunk down original picture
-    edges = cv2.Canny(thresh, 50,100)
-    return edges
+    imgray = cv2.morphologyEx(imgray,cv2.MORPH_OPEN,kernel)
+    imgray = cv2.morphologyEx(imgray,cv2.MORPH_CLOSE,kernel)
+
+    return imgray
 #Takes edited picture and find corners. Returns transformation of original image croped and transformed
 def findAndTransform(processed, original, scale):
     #Finding the corners
-    dst = cv2.cornerHarris(processed,4,3,.04)
+    dst = cv2.cornerHarris(processed,4,3,.03)
     dst = cv2.dilate(dst,None)
+    image = cv2.resize(original, (original.shape[1]/scale, original.shape[0]/scale))
 
     #Finds locations of on image where corners could be
-    mask =  dst>0.10*dst.max()
+    mask =  dst>0.02*dst.max()
     locs = np.column_stack(np.where(mask))
     uLeft = np.array(processed.shape[:2])
     lLeft = [0, processed.shape[1] ]
@@ -87,26 +86,25 @@ def findAndTransform(processed, original, scale):
     dst = cv2.warpPerspective(original, M,(length,width))
     return angle_check, dst
 
+def findCard(img, scale = 10):
+    """
+    Method to combine funtionality, takes an image and optionally a scale
+    Returns a boolean and cropped and transformed image
+    """
+    edits = processCard(img,scale)
+    good, cropped = findAndTransform(edits, img, scale)
+    return good, cropped
+
 def main():
 
     path = "/media/andrew/E0D419A0D41979CC/Users/Andrew Batbouta/Dropbox/Droid/"
     for i in range(10,35):
         image_o = cv2.imread(path+'0'+str(i)+'.jpg')
-        #Scale factor that seems to be working the best so far
-        scale = 10
-
-        edits = processCard(image_o, scale)
-        good, dst = findAndTransform(edits, image_o, scale)
+    
+        good, dst = findCard(image_o)#findAndTransform(edits, image_o, scale)
         if good:
-            print i
-            plt.subplot(121)
-            plt.imshow(dst)
-            plt.axis("off")
-            plt.subplot(122)
-            plt.axis("off")
-            plt.imshow(image_o)
-            plt.show()
 
+            process.processCard(dst)
 
 if __name__ == '__main__':
     main()
