@@ -8,6 +8,15 @@
     {% endblock %}
 </head>
 <body>
-    <div class="container">{% block content %}{% endblock %}</div>
+    <div class="container">
+        <div class='row'>
+            <div class='text-center twelve columns'>
+                <h2><a href='/'>BusinessCardScanner</a></h2>
+            </div>
+        </div>
+        <div class='row'>
+             {% block content %}{% endblock %}
+         </div>
+    </div>
 </body>
 </html>

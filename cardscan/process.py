@@ -13,13 +13,14 @@ def parseText(text):
     text = text.replace('\xe2\x80\x98','')
     return text
 
-def getText(img, regions):
+def getText(img, regions, debug=False):
     textChunks = []
+    imgChunks = []
     for region in regions:
         x1, y1, x2, y2 = region
         # Clip region and extract text
         chunk = img[y1:y2, x1:x2, ::]
-        ret,chunk = cv2.threshold(chunk,150,255,0)
+        ret,chunk = cv2.threshold(chunk,110,255,0)
         cv2.imwrite('tmp.jpg', chunk)
         subprocess.call(['tesseract', 'tmp.jpg', 'tmp'])
         f = open('tmp.txt')
@@ -29,17 +30,21 @@ def getText(img, regions):
             if line.strip() != '':
                 lines.append(parseText(line))
         textChunks.append(lines)
-        # utils.display([(str(lines), chunk)])
+        imgChunks.append(chunk)
         f.close()
         subprocess.call(['rm', 'tmp.jpg', 'tmp.txt'])
+    if debug:
+        display = [(str(text), imgChunks[i]) for i, text in enumerate(textChunks)]
+        utils.display(display[:10])
+        utils.display(display[10:20])
     return textChunks
 
 def getRegions(img):
     grayImg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     edges = cv2.Canny(grayImg,150,200,apertureSize = 3) 
     kernel = np.ones((3,3),np.uint8)
-    edges = cv2.dilate(edges,kernel,iterations = 12)
-    # binaryImg = cv2.morphologyEx(edges,cv2.MORPH_CLOSE,kernel)
+    edges = cv2.dilate(edges,kernel,iterations = 14)
+    utils.display([('', edges)])
     contours, hierarchy = cv2.findContours(edges,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     # Only take contours of a certain size
     regions = []
@@ -48,12 +53,10 @@ def getRegions(img):
         [x, y, w, h] = cv2.boundingRect(contour)
         if w < 50 or h < 50:
             pass
-        elif w > .95*imgW or h > .95*imgH:
-            pass
+        # elif w > .95*imgW or h > .95*imgH:
+        #     pass
         else:
             regions.append((x, y, x+w, y+h))
-    # cv2.drawContours(im, contours, -1, (0,255,0), 3)
-    # utils.display([('', im)])
     return regions
 
 def drawRegions(img, regions):
@@ -64,14 +67,10 @@ def drawRegions(img, regions):
 def processCard(img):
     regions = getRegions(img)
     text = getText(img, regions)
-    print text
-    utils.display([('', drawRegions(img, regions))])
+    return regions, text
 
 if __name__ == "__main__":
     imgs = utils.getImages('../../stanford_business_cards/scans/')
     for img in imgs:
-        processCard(img[1])
-    # im = utils.readImage('../../stanford_business_cards/scans/003_002.jpg')
-    # print im
-    # processCard(im)
-
+        regions, text = processCard(img[1])
+        

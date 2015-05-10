@@ -2,7 +2,6 @@
 {% block title %}BusinessCardScanner{% endblock %}
 {% block content %}
 <div class='row text-center'>
-    <h2>BusinessCardScanner</h2>
     <p>
     Below are some recently uploaded business cards. 
     </p>
@@ -14,9 +13,16 @@
     <div class='four columns'>
         <ul>
             {% for card in cards %}
-            <li><a href='/show/{{ card._id}}'>{{card.filename }}</a></li>
+                <li><a href='/show/{{ card._id}}'>{{card.filename }}</a></li>
+            {% else %}
+                <li><em>No business cards found</em></li>
             {% endfor %}
         </ul>
+    </div>
+</div>
+<div class='row'>
+    <div class='twelve columns text-center'>
+        <a class="button" href="/upload">Upload</a>
     </div>
 </div>
 {% endblock %}

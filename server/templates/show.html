@@ -1,10 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Upload{% endblock %}
+{% block title %}Show{% endblock %}
 {% block content %}
 <div class='row text-center'>
-    <h2>BusinessCardScanner</h2>
     <p>
-        View Card: {{card.filename}}
+    Viewing Card: {{card.filename}}
     </p>
 </div>
 <div class='row'>
@@ -13,6 +12,69 @@
         <img src="{{ url }}" alt="Uploaded File" class='u-max-full-width'>
     </div>
     <div class='six columns'>
+        <form>
+            <div class='row'>
+                <div class='twelve columns'>
+                    <label for='name'>Name:</label>
+                    <input class="u-full-width" id='name' value='John Smith' type='text'>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='twelve columns'>
+                    <label for='email'>Email:</label>
+                    <input class="u-full-width" id='email' value='johnsmith@example.com' type='email'>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='twelve columns'>
+                    <label for='company'>Company:</label>
+                    <input class="u-full-width" id='company' value='Some Company, Inc' type='text'>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='twelve columns'>
+                    <label for='title'>Title:</label>
+                    <input class="u-full-width" id='title' value='Manager' type='text'>
+                </div>
+            </div>
+            <input class="button-primary" value="Get vCard" type="submit">
+        </form>
     </div>
 </div>
+<div class='row'>
+</div>
+<div class='row'>
+    <div class='nine columns'>
+        <div class='row'>
+            <div class='twelve columns fields'>
+            </div>
+        </div>
+        <div class='row'>
+            <div class='twelve columns'>
+
+                <table class="u-full-width">
+                    <thead>
+                        <tr>
+                            <td>Select</td>
+                            <td>Text</td>
+                            <td>Suggested</td>
+                        </tr>
+                    </thead>
+                    <tbody class='text'>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class='three columns'>
+        <input value="Join" type="button" class=''>
+        <input value="Tag Field" type="submit">
+        <input value="submit input" type="submit">
+    </div>
+</div>
+<script>
+var card_id = '{{ card._id }}';
+</script>
+<script src="/static/js/jquery-2.1.4.js"></script>
+<script src="/static/js/show.js"></script>
 {% endblock %}

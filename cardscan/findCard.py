@@ -37,6 +37,7 @@ def processCard(image_o,scale):
 
     return imgray
 #Takes edited picture and find corners. Returns transformation of original image croped and transformed
+
 def findAndTransform(processed, original, scale):
     #Finding the corners
     dst = cv2.cornerHarris(processed,4,3,.03)
