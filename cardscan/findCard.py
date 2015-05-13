@@ -1,14 +1,53 @@
-#Tested images that work Droid 7,12, 14,17,19,21,22, 23,24, 25, maybe 26,30
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import math as m
 import process
 import os
+import random as r
 
+"""
+Sorting methods for determining most likely corners
+"""
+def uLeftSort(pt):
+    return pt[0] + pt[1]
 
-def ptDist(pt1, pt2):
-    return m.sqrt((pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2 )
+def lLeftSort(pt):
+    return -1*(pt[0] - pt[1])
+
+def uRightSort(pt):
+    return -1*(pt[1] - pt[0])
+
+def lRightSort(pt):
+    return -1*(pt[0] + pt[1])
+
+#End of Sort Functions
+
+"""
+Function to guess the most likely corner given an ordered list of corners
+Returns the guess of what the corner of the busniness card should be
+"""
+def guessCorner(orderedCorners):
+    cutoff = int(.25 * len(orderedCorners))
+    points = orderedCorners[:cutoff]
+    return orderedCorners[0]
+
+def distance(pt1,pt2):
+    return m.sqrt( (pt1[0]-pt2[0])**2 +  (pt1[1]-pt2[1])**2 )
+
+def sparcify(pts):
+    sparce = []
+    while(len(pts) > 0):
+        point = pts[int(r.random() * len(pts))]
+        sparce.append(point)
+        pts.remove(point)
+        toRemove = []
+        for pt in pts:
+            if distance(pt,point) < 5:
+                toRemove.append(pt)
+        for pt in toRemove:
+            pts.remove(pt)
+    return sparce
 
 def line(p1, p2):
     A = (p1[1] - p2[1])
@@ -33,12 +72,28 @@ def checkAngle(angle):
 
 def find_angle(pt1,pt2,pt3):
     #pt1 is the vertex of the three points forming the angle
-    p12 = m.sqrt( (pt1[0] - pt2[0])**2 + (pt1[1] - pt2[1])**2 )
-    p13 = m.sqrt( (pt1[0] - pt3[0])**2 + (pt1[1] - pt3[1])**2 )
-    p23 = m.sqrt( (pt2[0] - pt3[0])**2 + (pt2[1] - pt3[1])**2 )
-    #From law of Cosines
-    angle = m.acos( (p12**2+p13**2-p23**2) / (2.0*p12*p13) )
-    return angle
+    try:
+        p12 = m.sqrt( (pt1[0] - pt2[0])**2 + (pt1[1] - pt2[1])**2 )
+        p13 = m.sqrt( (pt1[0] - pt3[0])**2 + (pt1[1] - pt3[1])**2 )
+        p23 = m.sqrt( (pt2[0] - pt3[0])**2 + (pt2[1] - pt3[1])**2 )
+        #From law of Cosines
+        angle = m.acos( (p12**2+p13**2-p23**2) / (2.0*p12*p13) )
+        return angle
+    except(ZeroDivisionError):
+        return 0
+
+def angleApproval(points):
+    total_angle = m.pi * 2
+
+    for i in range(len(points) - 1):
+        angle = find_angle(points[i], points[i-1], points[i+1])
+        if not checkAngle(angle):
+            return False
+        total_angle -= angle
+    if not checkAngle(total_angle):
+        return False
+    else:
+        return True
 
 def processCard(image_o,scale):
     #Scale image down so functions work better and turns to greyscale
@@ -55,7 +110,10 @@ def processCard(image_o,scale):
 
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_OPEN,kernel)
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_CLOSE,kernel)
-    imgray = cv2.Canny(imgray,40,75)
+    imgray = cv2.Canny(imgray,40,70)
+    plt.imshow(imgray)
+    plt.gray()
+    plt.show()
     return imgray
 #Takes edited picture and find corners. Returns transformation of original image croped and transformed
 
@@ -138,38 +196,40 @@ def findAndTransform(processed, original, scale):
 
     for i in range(len(locs)):
         if mask[i]:
-            good_points.append(locs[i])
+            good_points.append(tuple(locs[i]))
 
-    uLeft = np.array(processed.shape[:2])
-    lLeft = [0, processed.shape[1] ]
-    uRight = [processed.shape[0], 0]
-    lRight = [0,0]
-    #Loops though possible corners and decided if it is one of the four on the rectangle
-    for pair in good_points:
-        if uLeft[0] + uLeft[1] > pair[0] + pair[1]:
-            uLeft = pair
-        if lLeft[0] - lLeft[1] < pair[0] - pair[1]:
-            lLeft = pair
-        if uRight[1] - uRight[0] < pair[1] - pair[0]:
-            uRight = pair
-        if lRight[0] + lRight[1] < pair[0] + pair[1]:
-            lRight = pair
+    #Gets rid of points that are too close to eachother
+    good_points = sparcify(good_points)
+    uLeftOrder = sorted(good_points, key=uLeftSort)
+    uRightOrder = sorted(good_points, key=uRightSort)
+    lLeftOrder = sorted(good_points, key=lLeftSort)
+    lRightOrder = sorted(good_points, key=lRightSort)
+    uLeft = uLeftOrder[0]
+    uRight = uRightOrder[0]
+    lLeft = lLeftOrder[0]
+    lRight = lRightOrder[0]
+    points = [uLeft,uRight,lRight,lLeft]
+    angle_check = angleApproval(points)
+    """
+    if not angle_check:
+        #attempt to find better transformation
+        x = 0
+        y = 0
+        for pt in points:
+            x += pt[0]
+            y += pt[1]
+        approxCenter = (x/4,y/4)
+        maxDiff = distance(points[0], approxCenter)
+        bad_point =
+        for i in range(1,4):
+            dist = distance()
+    """
     #Returns the points back to normal size of the image
     uLeft = np.array(uLeft) * scale
     uRight = np.array(uRight) * scale
     lLeft = np.array(lLeft) * scale
     lRight = np.array(lRight) * scale
     points = [uLeft,uRight,lRight,lLeft]
-    total_angle = m.pi * 2
-    angle_check = True
-
-    for i in range(len(points) - 1):
-        angle = find_angle(points[i], points[i-1], points[i+1])
-        if not checkAngle(angle):
-            angle_check = False
-        total_angle -= angle
-    if not checkAngle(total_angle):
-        angle_check = False
 
     length = int(m.sqrt((uLeft[0]-uRight[0])**2 + (uLeft[1]-uRight[1])**2))
     width = int(m.sqrt((uLeft[0] - lLeft[0])**2 + (uLeft[1] - lLeft[1])**2 ))
@@ -195,7 +255,6 @@ def findCard(img):
 
 def main():
     imgs = os.listdir("Droid")
-
 
     for img in imgs:
         image_o = cv2.imread("Droid/"+img)
