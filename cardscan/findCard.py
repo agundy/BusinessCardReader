@@ -111,9 +111,11 @@ def processCard(image_o,scale):
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_OPEN,kernel)
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_CLOSE,kernel)
     imgray = cv2.Canny(imgray,40,70)
+    """
     plt.imshow(imgray)
     plt.gray()
     plt.show()
+    """
     return imgray
 #Takes edited picture and find corners. Returns transformation of original image croped and transformed
 
@@ -260,7 +262,6 @@ def main():
         image_o = cv2.imread("Droid/"+img)
         good, dst = findCard(image_o)
         if good:
-
             plt.imshow(dst)
             plt.axis("off")
             plt.show()
