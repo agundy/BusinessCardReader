@@ -29,6 +29,9 @@ def distance(pt1,pt2):
 
 """
 Function to remove large clusters
+Goal of function was in the future can guess better corners
+by knowing where specific guesses are rather than having to check through
+so many points that are right next to eachother
 """
 def sparcify(pts):
     sparce = []
@@ -44,11 +47,19 @@ def sparcify(pts):
             pts.remove(pt)
     return sparce
 
+"""
+Function to find a line in Ax + By + C = 0 form
+Also approves the slope of the line so only vertical and horizontal lines are
+made. This limits how distorted the card can be in an image but improves
+results in flatter cases. By making the angle range smaller more distored
+cards can be found
+"""
 def line(p1, p2):
     A = (p1[1] - p2[1])
     B = (p2[0] - p1[0])
     C = (p1[0]*p2[1] - p2[0]*p1[1])
     angle = 90
+    #If B is 90 then there is a 90 degree angle and causes a divide by zero
     if not B == 0:
         slope  = -1*A/float(B)
         angle = m.atan(slope) * 180 / np.pi
@@ -60,7 +71,9 @@ def line(p1, p2):
         return A, B, -C
 
 def intersection(L1, L2):
-    #Check to make sure lines have some difference between them
+    #Check to make sure lines have some difference between them in angle
+
+    #Massive slope in case line is vertical
     slope1 = 99999999999999
     if not L1[1] == 0:
         slope1 = -1*L1[0]/float(L1[1])
@@ -72,8 +85,12 @@ def intersection(L1, L2):
         slope1 = slope2
         slope2 = tmp
     angle = m.atan( (slope1-slope2) / (1+slope1*slope2) ) * 180 / np.pi
-
-    if m.fabs(angle) < 25:
+    """
+    If two lines do not differ by a large enough angle then the intersection
+    should be ignored since the goal is to look for corners not necessarily
+    just intersections
+    """
+    if m.fabs(angle) < 35:
         return False
     D  = L1[0] * L2[1] - L1[1] * L2[0]
     Dx = L1[2] * L2[1] - L1[1] * L2[2]
@@ -101,6 +118,7 @@ def find_angle(pt1,pt2,pt3):
     except(ZeroDivisionError):
         return 0
 
+#Checks to see if the four corners form approximately right angles
 def angleApproval(points):
     total_angle = m.pi * 2
 
@@ -114,6 +132,11 @@ def angleApproval(points):
     else:
         return True
 
+"""
+Function to turn image into canny edges to find corners of a card
+Gaussian blur was previously used and successful, but recently the
+bilateral filter seems to give better results
+"""
 def processCard(image_o,scale):
     #Scale image down so functions work better and turns to greyscale
     image = cv2.resize(image_o, (image_o.shape[1]/scale, image_o.shape[0]/scale))
@@ -141,7 +164,7 @@ def findAndTransform(processed, original, scale):
     dst = cv2.cornerHarris(processed,4,3,.03)
 
     #Finding Harris lines
-    lines = cv2.HoughLines(processed,1,2*np.pi/180,34)
+    lines = cv2.HoughLines(processed,1,2*np.pi/180,33)
     my_lines = []
     for rho,theta in lines[0]:
         a = np.cos(theta)
@@ -162,7 +185,7 @@ def findAndTransform(processed, original, scale):
     line_corners = []
     x_corner = []
     y_corner = []
-    #F
+    #Finding intersection of lines
     for i in range(len(my_lines)):
         for j in range(len(my_lines)):
             pt = intersection(my_lines[i], my_lines[j])
@@ -180,7 +203,7 @@ def findAndTransform(processed, original, scale):
     x_corner = np.array(x_corner)
     y_corner = np.array(y_corner)
     #image[dst>0.15*dst.max()]=[255,0,255]
-    """
+    """ Image ploting for debugging and testing
     plt.subplot(121)
     plt.imshow(image)
     plt.subplot(122)
@@ -219,13 +242,17 @@ def findAndTransform(processed, original, scale):
             good_points.append(tuple(locs[i]))
 
     #Gets rid of points that are too close to eachother
+    """ Commented since un-used, but function works
     good_points = sparcify(good_points)
+
     for pt in good_points:
         image[pt[0], pt[1]] = [255,10,255]
-    """
+
     plt.imshow(image)
     plt.show()
     """
+
+    #Sorting of points by top left/right
     uLeftOrder = sorted(good_points, key=uLeftSort)
     uRightOrder = sorted(good_points, key=uRightSort)
     lLeftOrder = sorted(good_points, key=lLeftSort)
