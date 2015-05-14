@@ -23,18 +23,13 @@ def lRightSort(pt):
 
 #End of Sort Functions
 
-"""
-Function to guess the most likely corner given an ordered list of corners
-Returns the guess of what the corner of the busniness card should be
-"""
-def guessCorner(orderedCorners):
-    cutoff = int(.25 * len(orderedCorners))
-    points = orderedCorners[:cutoff]
-    return orderedCorners[0]
-
+#Finds distance between two points
 def distance(pt1,pt2):
     return m.sqrt( (pt1[0]-pt2[0])**2 +  (pt1[1]-pt2[1])**2 )
 
+"""
+Function to remove large clusters
+"""
 def sparcify(pts):
     sparce = []
     while(len(pts) > 0):
@@ -43,7 +38,7 @@ def sparcify(pts):
         pts.remove(point)
         toRemove = []
         for pt in pts:
-            if distance(pt,point) < 5:
+            if distance(pt,point) < 3:
                 toRemove.append(pt)
         for pt in toRemove:
             pts.remove(pt)
@@ -53,9 +48,33 @@ def line(p1, p2):
     A = (p1[1] - p2[1])
     B = (p2[0] - p1[0])
     C = (p1[0]*p2[1] - p2[0]*p1[1])
-    return A, B, -C
+    angle = 90
+    if not B == 0:
+        slope  = -1*A/float(B)
+        angle = m.atan(slope) * 180 / np.pi
+        angle = m.fabs(angle)
+    #Can limit range to improve straighter examples, fails when card is less stright
+    if angle < 70 and angle > 5:
+        return False
+    else:
+        return A, B, -C
 
 def intersection(L1, L2):
+    #Check to make sure lines have some difference between them
+    slope1 = 99999999999999
+    if not L1[1] == 0:
+        slope1 = -1*L1[0]/float(L1[1])
+    slope2 = 99999999999999
+    if not L2[1] == 0:
+        slope2 = -1*L2[0]/float(L2[1])
+    if slope1 < slope2:
+        tmp = slope1
+        slope1 = slope2
+        slope2 = tmp
+    angle = m.atan( (slope1-slope2) / (1+slope1*slope2) ) * 180 / np.pi
+
+    if m.fabs(angle) < 25:
+        return False
     D  = L1[0] * L2[1] - L1[1] * L2[0]
     Dx = L1[2] * L2[1] - L1[1] * L2[2]
     Dy = L1[0] * L2[2] - L1[2] * L2[0]
@@ -98,34 +117,31 @@ def angleApproval(points):
 def processCard(image_o,scale):
     #Scale image down so functions work better and turns to greyscale
     image = cv2.resize(image_o, (image_o.shape[1]/scale, image_o.shape[0]/scale))
-    #image = cv2.bilateralFilter(image, 5, 500, 120)
+    image = cv2.bilateralFilter(image, 5, 100, 25)
     imgray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
     #Processing image to improve reliability of finding corners
-
+    """
     sigma = 1
     ksize = (4*sigma+1,4*sigma+1)
     imgray = cv2.GaussianBlur(imgray, ksize, sigma)
-
+    """
     kernel = np.ones((5,5),np.uint8)
 
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_OPEN,kernel)
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_CLOSE,kernel)
-    imgray = cv2.Canny(imgray,40,70)
-    """
-    plt.imshow(imgray)
-    plt.gray()
-    plt.show()
-    """
-    return imgray
-#Takes edited picture and find corners. Returns transformation of original image croped and transformed
 
+    imgray = cv2.Canny(imgray,40,55)
+
+    return imgray
+
+#Takes edited picture and find corners. Returns transformation of original image croped and transformed
 def findAndTransform(processed, original, scale):
     image = cv2.resize(original, (original.shape[1]/scale, original.shape[0]/scale))
     #Finding the corners
     dst = cv2.cornerHarris(processed,4,3,.03)
 
     #Finding Harris lines
-    lines = cv2.HoughLines(processed,1,2*np.pi/180,35)
+    lines = cv2.HoughLines(processed,1,2*np.pi/180,34)
     my_lines = []
     for rho,theta in lines[0]:
         a = np.cos(theta)
@@ -137,8 +153,12 @@ def findAndTransform(processed, original, scale):
         x2 = int(x0 - 1000*(-b))
         y2 = int(y0 - 1000*(a))
         #making list of all Hough lines found
-        my_lines.append( line( np.array( [x0,y0] ), np.array( [x1,y1] ) ) )
-        cv2.line(image,(x1,y1),(x2,y2),(0,0,255),1)
+        foundLine = line( np.array( [x0,y0] ), np.array( [x1,y1] ) )
+        if foundLine == False:
+            continue
+        else:
+            my_lines.append( foundLine )
+            cv2.line(image,(x1,y1),(x2,y2),(0,0,255),1)
     line_corners = []
     x_corner = []
     y_corner = []
@@ -157,11 +177,10 @@ def findAndTransform(processed, original, scale):
                 x_corner.append(pt[0])
                 y_corner.append(pt[1])
                 line_corners.append(pt)
-                #image[int(pt[0]), int(pt[1])] = [255,0,255]
     x_corner = np.array(x_corner)
     y_corner = np.array(y_corner)
     #image[dst>0.15*dst.max()]=[255,0,255]
-    """ Ploting images for testing
+    """
     plt.subplot(121)
     plt.imshow(image)
     plt.subplot(122)
@@ -170,9 +189,8 @@ def findAndTransform(processed, original, scale):
     plt.show()
     """
     #Finds locations of on image where corners could be
-    mask =  dst>0.02*dst.max()
+    mask =  dst>0.04*dst.max()
     locs = np.column_stack(np.where(mask))
-
     """
     Checks for good points by comparing Hough line intersections
     to Harris corners and comparing the distance from each and if found a close
@@ -189,7 +207,7 @@ def findAndTransform(processed, original, scale):
         diff = (x_diff**2 + y_diff**2)**.5
         #Experimental good distance
         #Number can be hard coded for now since all images are scaled to around same size
-        tmpMask = diff < 5
+        tmpMask = diff < 10
 
         if np.sum(tmpMask) > 0:
             mask.append(True)
@@ -202,30 +220,26 @@ def findAndTransform(processed, original, scale):
 
     #Gets rid of points that are too close to eachother
     good_points = sparcify(good_points)
+    for pt in good_points:
+        image[pt[0], pt[1]] = [255,10,255]
+    """
+    plt.imshow(image)
+    plt.show()
+    """
     uLeftOrder = sorted(good_points, key=uLeftSort)
     uRightOrder = sorted(good_points, key=uRightSort)
     lLeftOrder = sorted(good_points, key=lLeftSort)
     lRightOrder = sorted(good_points, key=lRightSort)
+    orders = [uLeftOrder, uRightOrder, lLeftOrder, lRightOrder]
+
     uLeft = uLeftOrder[0]
     uRight = uRightOrder[0]
     lLeft = lLeftOrder[0]
     lRight = lRightOrder[0]
     points = [uLeft,uRight,lRight,lLeft]
+
     angle_check = angleApproval(points)
-    """
-    if not angle_check:
-        #attempt to find better transformation
-        x = 0
-        y = 0
-        for pt in points:
-            x += pt[0]
-            y += pt[1]
-        approxCenter = (x/4,y/4)
-        maxDiff = distance(points[0], approxCenter)
-        bad_point =
-        for i in range(1,4):
-            dist = distance()
-    """
+
     #Returns the points back to normal size of the image
     uLeft = np.array(uLeft) * scale
     uRight = np.array(uRight) * scale
@@ -249,7 +263,7 @@ def findCard(img):
     Method to combine funtionality, takes an image and optionally a scale
     Returns a boolean and cropped and transformed image
     """
-    approved = 50000
+    approved = 52500
     scale = int(m.sqrt(img.shape[0]*img.shape[1]/approved))
     edits = processCard(img,scale)
     good, cropped = findAndTransform(edits, img, scale)
