@@ -102,9 +102,9 @@ def intersection(L1, L2):
     else:
         return False
 
-#Angle check, if angle is greater than 33% off from what it should be (pi/2)
+#Angle check, if angle is greater than 25% off from what it should be (pi/2)
 def checkAngle(angle):
-    return m.pi/2 - m.pi/2*.33 < angle and angle < m.pi/2 + m.pi/2*.33
+    return m.pi/2 - m.pi/2*.25 < angle and angle < m.pi/2 + m.pi/2*.25
 
 def find_angle(pt1,pt2,pt3):
     #pt1 is the vertex of the three points forming the angle
@@ -140,7 +140,7 @@ bilateral filter seems to give better results
 def processCard(image_o,scale):
     #Scale image down so functions work better and turns to greyscale
     image = cv2.resize(image_o, (image_o.shape[1]/scale, image_o.shape[0]/scale))
-    image = cv2.bilateralFilter(image, 5, 100, 25)
+    image = cv2.bilateralFilter(image, 5, 150, 50)
     imgray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
     #Processing image to improve reliability of finding corners
     """
@@ -153,13 +153,18 @@ def processCard(image_o,scale):
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_OPEN,kernel)
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_CLOSE,kernel)
 
-    imgray = cv2.Canny(imgray,40,55)
-
+    imgray = cv2.Canny(imgray,40,50)
+    """
+    plt.imshow(imgray)
+    plt.gray()
+    plt.show()
+    """
     return imgray
 
 #Takes edited picture and find corners. Returns transformation of original image croped and transformed
 def findAndTransform(processed, original, scale):
     image = cv2.resize(original, (original.shape[1]/scale, original.shape[0]/scale))
+    image2 = np.copy(image)
     #Finding the corners
     dst = cv2.cornerHarris(processed,4,3,.03)
 
@@ -202,8 +207,8 @@ def findAndTransform(processed, original, scale):
                 line_corners.append(pt)
     x_corner = np.array(x_corner)
     y_corner = np.array(y_corner)
-    #image[dst>0.15*dst.max()]=[255,0,255]
-    """ Image ploting for debugging and testing
+    image[dst>0.04*dst.max()]=[255,0,255]
+    """
     plt.subplot(121)
     plt.imshow(image)
     plt.subplot(122)
@@ -230,7 +235,7 @@ def findAndTransform(processed, original, scale):
         diff = (x_diff**2 + y_diff**2)**.5
         #Experimental good distance
         #Number can be hard coded for now since all images are scaled to around same size
-        tmpMask = diff < 10
+        tmpMask = diff < 7
 
         if np.sum(tmpMask) > 0:
             mask.append(True)
@@ -240,15 +245,14 @@ def findAndTransform(processed, original, scale):
     for i in range(len(locs)):
         if mask[i]:
             good_points.append(tuple(locs[i]))
-
     #Gets rid of points that are too close to eachother
     """ Commented since un-used, but function works
     good_points = sparcify(good_points)
-
+    """
     for pt in good_points:
-        image[pt[0], pt[1]] = [255,10,255]
-
-    plt.imshow(image)
+        image2[pt[0], pt[1]] = [255,10,255]
+    """
+    plt.imshow(image2)
     plt.show()
     """
 
@@ -301,9 +305,17 @@ def main():
 
     for img in imgs:
         image_o = cv2.imread("Droid/"+img)
+
+        plt.imshow(cv2.cvtColor(image_o, cv2.COLOR_BGR2RGB))
+        plt.show()
+
         good, dst = findCard(image_o)
         if good:
-            plt.imshow(dst)
+            plt.subplot(121)
+            plt.imshow(cv2.cvtColor(dst, cv2.COLOR_BGR2RGB))
+            plt.axis("off")
+            plt.subplot(122)
+            plt.imshow(cv2.cvtColor(image_o, cv2.COLOR_BGR2RGB))
             plt.axis("off")
             plt.show()
 
