@@ -9,11 +9,18 @@
 <div class='row'>
     <div class='six columns'>
         <h2></h2>
-        <img src="{{ url }}" alt="Uploaded File" class='u-max-full-width'>
+        <a class="button button-primary" id='uploadedBtn' href="#">Uploaded</a>
+        <a class="button" id='processedBtn' href="#">Processed</a>
+        <img src="{{ url }}" id='uploadedImg' alt="Uploaded File" class='u-max-full-width'>
+        <img src="" id='processedImg' alt="Processed File" class='u-max-full-width hidden'>
+        <h6>Errors: </h6>
+        <p class='warning'>
+        </p>
+        <br>
     </div>
     <div class='six columns'>
-        <form>
-            <div class='row'>
+        <form class='edit'>
+            <!-- <div class='row'>
                 <div class='twelve columns'>
                     <label for='name'>Name:</label>
                     <input class="u-full-width" id='name' value='John Smith' type='text'>
@@ -36,9 +43,9 @@
                     <label for='title'>Title:</label>
                     <input class="u-full-width" id='title' value='Manager' type='text'>
                 </div>
-            </div>
-            <input class="button-primary" value="Get vCard" type="submit">
+            </div> -->
         </form>
+        <input class="button-primary" value="Get vCard" type="submit">
     </div>
 </div>
 <div class='row'>
@@ -46,7 +53,7 @@
 <div class='row'>
     <div class='nine columns'>
         <div class='row'>
-            <div class='twelve columns fields'>
+            <div class='twelve columns'>
             </div>
         </div>
         <div class='row'>
@@ -61,15 +68,19 @@
                         </tr>
                     </thead>
                     <tbody class='text'>
+                      
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    <div class='three columns'>
-        <input value="Join" type="button" class=''>
-        <input value="Tag Field" type="submit">
-        <input value="submit input" type="submit">
+    <div class='three columns fields'>
+        <p>
+            <input class='button-primary' value="Tag Field" type="submit" onclick='tagField()'>
+        </p>
+        <!-- <input value="Join" type="button" class=''> -->
+        <br>
+        <!-- <input value="submit input" type="submit"> -->
     </div>
 </div>
 <script>

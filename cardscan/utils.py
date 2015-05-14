@@ -7,7 +7,8 @@ import random as rand
 def readImage(imgName, grayscale=False):
     '''Simple function to read in an image and reverse the colors'''
     if grayscale:
-        img = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+        img = cv2.imread(imgName)
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     else:
         img = cv2.imread(imgName)
         img = np.array(img[::,::,::-1])
@@ -54,5 +55,5 @@ def display(images):
 
 
 if __name__ == "__main__":
-    imgs = getImages('../../stanford_business_cards/scans')
+    imgs = getImages('../../stanford_business_cards/scans', -1)
     display(imgs[:5])

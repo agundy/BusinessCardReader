@@ -9,3 +9,11 @@ a {
 .fields {
   float: left;
 }
+
+.hidden {
+  display: none;
+}
+
+.warning {
+  color: red;
+}

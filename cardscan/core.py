@@ -27,15 +27,27 @@ def processCard(cardId):
     card = BusinessCards.find_one({'_id': ObjectId(cardId)})
     cardPath = FOLDER_PATH + card['filename']
     img = utils.readImage(cardPath)
-    good, cardImg = findCard.findCard(img)
+    goodTransform, cardImg = findCard.findCard(img)
+    goodBlur = process.checkBlur(cardImg)
     regions, text = process.processCard(cardImg)
     processedCard = process.drawRegions(cardImg, regions)
-    print card['filename']
-    cv2.imwrite('./static/processed/' + card['filename'], processedCard)
+    suggestedFields = process.guessFields(regions, text)
+    imgWrite = processedCard[::, ::, ::-1]
+    cv2.imwrite('server/static/processed/' + card['filename'], imgWrite)
     card['processed'] = True
     card['text'] = text
     card['regions'] = regions
-    card['good'] = good
+    card['suggested'] = suggestedFields
+
+    if not goodTransform:
+        card['warnings'] = ['Detected a bad transformation']
+    if not goodBlur:
+        warningMsg = 'Detected a blurry image'
+        if 'warnings' in card:
+           card['warnings'].append(warningMsg)
+        else:
+            card['warnings'] = [warningMsg]
+
     BusinessCards.save(card)
 
 if __name__ == "__main__":
