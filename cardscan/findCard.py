@@ -140,31 +140,38 @@ bilateral filter seems to give better results
 def processCard(image_o,scale):
     #Scale image down so functions work better and turns to greyscale
     image = cv2.resize(image_o, (image_o.shape[1]/scale, image_o.shape[0]/scale))
+
+    #Processing image to improve reliability of finding corners
     image = cv2.bilateralFilter(image, 5, 150, 50)
     imgray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-    #Processing image to improve reliability of finding corners
-    """
-    sigma = 1
-    ksize = (4*sigma+1,4*sigma+1)
-    imgray = cv2.GaussianBlur(imgray, ksize, sigma)
-    """
+
     kernel = np.ones((5,5),np.uint8)
 
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_OPEN,kernel)
     imgray = cv2.morphologyEx(imgray,cv2.MORPH_CLOSE,kernel)
 
     imgray = cv2.Canny(imgray,40,50)
-    """
+    """ Ploting of image before and after processing
+    plt.subplot(121)
+    plt.imshow(cv2.cvtColor(image_o, cv2.COLOR_BGR2RGB))
+    plt.title("Original")
+    plt.axis("off")
+    plt.subplot(122)
+    plt.axis("off")
+    plt.title("After Canny Edge")
     plt.imshow(imgray)
     plt.gray()
     plt.show()
     """
+
     return imgray
 
 #Takes edited picture and find corners. Returns transformation of original image croped and transformed
 def findAndTransform(processed, original, scale):
+    """ Extra images for displaying steps in finding card
     image = cv2.resize(original, (original.shape[1]/scale, original.shape[0]/scale))
     image2 = np.copy(image)
+    """
     #Finding the corners
     dst = cv2.cornerHarris(processed,4,3,.03)
 
@@ -186,7 +193,7 @@ def findAndTransform(processed, original, scale):
             continue
         else:
             my_lines.append( foundLine )
-            cv2.line(image,(x1,y1),(x2,y2),(0,0,255),1)
+            #cv2.line(image,(x1,y1),(x2,y2),(0,0,255),1)
     line_corners = []
     x_corner = []
     y_corner = []
@@ -197,7 +204,7 @@ def findAndTransform(processed, original, scale):
 
             if pt == False:
                 continue
-            elif pt[1] > image.shape[0] or pt[0] > image.shape[1] or pt[0] < 0 or pt[1] < 0:
+            elif pt[1] > processed.shape[0] or pt[0] > processed.shape[1] or pt[0] < 0 or pt[1] < 0:
                 continue
             else:
                 #Changing pt to numpy coordinate from opencv for sanity
@@ -207,15 +214,19 @@ def findAndTransform(processed, original, scale):
                 line_corners.append(pt)
     x_corner = np.array(x_corner)
     y_corner = np.array(y_corner)
-    image[dst>0.04*dst.max()]=[255,0,255]
-    """
+    """ Image displaying
+    image2[dst>0.04*dst.max()]=[255,0,255]
     plt.subplot(121)
-    plt.imshow(image)
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.axis("off")
+    plt.title("Image with Hough Lines Drawn")
     plt.subplot(122)
-    plt.imshow(processed)
-    plt.gray()
+    plt.imshow(cv2.cvtColor(image2, cv2.COLOR_BGR2RGB))
+    plt.title("Image with Harris Corners Drawn")
+    plt.axis("off")
     plt.show()
     """
+
     #Finds locations of on image where corners could be
     mask =  dst>0.04*dst.max()
     locs = np.column_stack(np.where(mask))
@@ -235,7 +246,7 @@ def findAndTransform(processed, original, scale):
         diff = (x_diff**2 + y_diff**2)**.5
         #Experimental good distance
         #Number can be hard coded for now since all images are scaled to around same size
-        tmpMask = diff < 7
+        tmpMask = diff < 10
 
         if np.sum(tmpMask) > 0:
             mask.append(True)
@@ -249,12 +260,18 @@ def findAndTransform(processed, original, scale):
     """ Commented since un-used, but function works
     good_points = sparcify(good_points)
     """
+
+    """ Image displaying code
     for pt in good_points:
-        image2[pt[0], pt[1]] = [255,10,255]
-    """
-    plt.imshow(image2)
+
+        image2[pt[0], pt[1]] = [255,10,0]
+
+    plt.imshow(cv2.cvtColor(image2, cv2.COLOR_BGR2RGB))
+    plt.axis("off")
+    plt.title("Image after Hough Line and Harris Corner comparison")
     plt.show()
     """
+
 
     #Sorting of points by top left/right
     uLeftOrder = sorted(good_points, key=uLeftSort)
@@ -291,7 +308,7 @@ def findAndTransform(processed, original, scale):
 
 def findCard(img):
     """
-    Method to combine funtionality, takes an image and optionally a scale
+    Method to combine funtionality, takes an image to transform as a parameter
     Returns a boolean and cropped and transformed image
     """
     approved = 52500
@@ -306,20 +323,21 @@ def main():
     for img in imgs:
         image_o = cv2.imread("Droid/"+img)
 
+        #Shows image before card extration run
         plt.imshow(cv2.cvtColor(image_o, cv2.COLOR_BGR2RGB))
         plt.show()
 
         good, dst = findCard(image_o)
         if good:
             plt.subplot(121)
-            plt.imshow(cv2.cvtColor(dst, cv2.COLOR_BGR2RGB))
-            plt.axis("off")
-            plt.subplot(122)
+            plt.title("Image Before Card Location")
             plt.imshow(cv2.cvtColor(image_o, cv2.COLOR_BGR2RGB))
             plt.axis("off")
+            plt.subplot(122)
+            plt.title("Image After Card Location")
+            plt.imshow(cv2.cvtColor(dst, cv2.COLOR_BGR2RGB))
+            plt.axis("off")
             plt.show()
-
-            #process.processCard(dst)
 
 if __name__ == '__main__':
     main()
