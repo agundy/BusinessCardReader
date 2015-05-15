@@ -57,12 +57,13 @@ def getText(img, regions, debug=False):
 
 def getRegions(img):
     grayImg = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    # grayImg = cv2.equalizeHist(np.copy(grayImg))
     edges = cv2.Canny(grayImg,100,200,apertureSize = 3) 
     if DEBUG:
-        utils.display([('Contours', edges)])
+        utils.display([('Canny Edge Detection', edges)])
     kernel = np.ones((3,3),np.uint8)
     edges = cv2.dilate(edges,kernel,iterations = 14)
-    edges = 255-edges
+    # edges = 255-edges
     # utils.display([('', edges)])
     contours, hierarchy = cv2.findContours(edges,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     if DEBUG:
@@ -153,13 +154,14 @@ def guessFields(regions, textFields):
     return suggestedFields
 
 if __name__ == "__main__":
-    # imgs = utils.getImages('../../stanford_business_cards/photos/', 5)
-    imgs = utils.getImages('../our_cards/', 7)
+    imgs = utils.getImages('../../stanford_business_cards/photos/', 5)
+    # imgs = utils.getImages('../our_cards/', 8)
     DEBUG = True
     # img = utils.readImage('../../stanford_business_cards/photos/004.jpg')
     # imgs = [('',img)]
     # utils.display(imgs)
-    good, cardImg = findCard.findCard(imgs[6][1])
+    good, cardImg = findCard.findCard(imgs[4][1])
+    utils.display([('card',cardImg)])
     regions, text = processCard(cardImg)
     processedCard = drawRegions(cardImg, regions)
     suggestedFields = guessFields(regions, text)

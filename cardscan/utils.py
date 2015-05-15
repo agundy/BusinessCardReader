@@ -11,7 +11,7 @@ def readImage(imgName, grayscale=False):
         img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     else:
         img = cv2.imread(imgName)
-        img = np.array(img[::,::,::-1])
+        img = np.array(img[::,::,::])
     return img
 
 def getImages(path, limit=20):
@@ -47,6 +47,8 @@ def display(images):
     count = 1
     plt.gray()
     for imgName, img in images:
+        if len(img.shape) == 3:
+            img = img[::,::,::-1]
         plt.subplot(size + count)
         plt.imshow(img)
         plt.title(imgName)

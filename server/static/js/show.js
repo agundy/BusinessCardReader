@@ -90,8 +90,9 @@ var tagField = function(){
     var text = '';
     $('input[name="checkbox"]:checked').each(function() {
         text = this.value;
+        $(this).removeAttr('checked');
     });
     if (text != '' && selectedBtn != ''){
         addField(selectedBtn, text);
     }
-}
+}129.161.33.95
